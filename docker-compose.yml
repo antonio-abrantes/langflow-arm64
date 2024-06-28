@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  langflow:
+    build: .  # Isso instruirá o Docker Compose a construir a imagem localmente usando o Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@postgres:5432/langflow
+      - LANGFLOW_CONFIG_DIR=/var/lib/langflow
+      - LANGFLOW_SUPERUSER=toniadmin
+      - LANGFLOW_SUPERUSER_PASSWORD=Eumesmo12345678
+      - LANGFLOW_NEW_USER_IS_ACTIVE=true
+      - LANGFLOW_AUTO_LOGIN=false
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.langflow.rule=Host(`langflow.tonilab.net`)"
+      - "traefik.http.routers.langflow.entrypoints=web,websecure"
+      - "traefik.http.routers.langflow.tls.certresolver=leresolver"
+      - "traefik.http.services.langflow.loadbalancer.server.port=7860"
+    volumes:
+      - langflow-data:/var/lib/langflow
+
+  postgres:
+    image: arm64v8/postgres:13  # Use uma imagem PostgreSQL compatível com ARM
+    environment:
+      POSTGRES_USER: langflow
+      POSTGRES_PASSWORD: langflow
+      POSTGRES_DB: langflow
+    ports:
+      - "5433:5432"  # Alterar a porta mapeada para 5433
+    volumes:
+      - langflow-postgres:/var/lib/postgresql/data
+
+volumes:
+  langflow-postgres:
+  langflow-data:
+
+networks:
+  default:
+    name: langflow
+    external: true
